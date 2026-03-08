@@ -1,3 +1,6 @@
+// Only run on actual video pages, not homepage/feed
+if (!window.location.pathname.startsWith("/watch")) return;
+
 // Auto-unmute YouTube videos when they load
 
 function unmuteVideo(video) {
