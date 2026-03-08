@@ -1,39 +1,16 @@
-// Content script: runs on YouTube pages, responds to messages from popup
+// Auto-unmute YouTube videos when they load
 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === "getMuteStatus") {
-    const video = document.querySelector("video");
+function unmuteVideo(video) {
+  if (video.muted) video.muted = false;
+  if (video.volume === 0) video.volume = 1;
+}
 
-    if (!video) {
-      sendResponse({ status: "no_video", muted: null, volume: null });
-      return true;
-    }
+// Handle video elements already on the page
+document.querySelectorAll("video").forEach(unmuteVideo);
 
-    // YouTube can mute via the video element OR via its internal player state
-    // Check both the HTML5 muted attribute and volume level
-    const htmlMuted = video.muted;
-    const volumeZero = video.volume === 0;
-    const isMuted = htmlMuted || volumeZero;
-
-    // Also try to read YouTube's internal player button state
-    const muteButton = document.querySelector(".ytp-mute-button");
-    let playerMuted = null;
-    if (muteButton) {
-      const title = muteButton.getAttribute("title") || "";
-      // If title says "Unmute", the video IS currently muted
-      playerMuted = title.toLowerCase().includes("unmute");
-    }
-
-    sendResponse({
-      status: "ok",
-      muted: playerMuted !== null ? playerMuted : isMuted,
-      htmlMuted,
-      volumeZero,
-      playerMuted,
-      volume: Math.round(video.volume * 100),
-      videoTitle: document.title.replace(" - YouTube", ""),
-    });
-
-    return true;
-  }
+// Watch for new video elements being added (YouTube is a SPA)
+const observer = new MutationObserver(() => {
+  document.querySelectorAll("video").forEach(unmuteVideo);
 });
+
+observer.observe(document.body, { childList: true, subtree: true });
