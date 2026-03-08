@@ -5,12 +5,24 @@ function unmuteVideo(video) {
   if (video.volume === 0) video.volume = 1;
 }
 
+function attachToVideo(video) {
+  unmuteVideo(video);
+  // YouTube sets mute AFTER the video element is created, so watch for it
+  video.addEventListener("volumechange", () => unmuteVideo(video));
+}
+
 // Handle video elements already on the page
-document.querySelectorAll("video").forEach(unmuteVideo);
+document.querySelectorAll("video").forEach(attachToVideo);
 
 // Watch for new video elements being added (YouTube is a SPA)
+const seen = new WeakSet();
 const observer = new MutationObserver(() => {
-  document.querySelectorAll("video").forEach(unmuteVideo);
+  document.querySelectorAll("video").forEach(video => {
+    if (!seen.has(video)) {
+      seen.add(video);
+      attachToVideo(video);
+    }
+  });
 });
 
 observer.observe(document.body, { childList: true, subtree: true });
